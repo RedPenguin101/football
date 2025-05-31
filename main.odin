@@ -56,6 +56,35 @@ MatchState :: struct {
     minute : int,
 }
 
+
+print_match_state :: proc(ms:MatchState) {
+    fmt.println("Match State, minute:", ms.minute, "ball", ms.team_with_ball)
+    fmt.println("-----------------------------")
+    for zone in Zone {
+        fmt.println(zone)
+        for p, i in ms.red_players {
+            if p.current_zone == zone {
+                fmt.print("  Red: ", p.name, p.position)
+                if ms.team_with_ball == .Red && ms.player_with_ball == i {
+                    fmt.println(" (Has ball)")
+                } else {
+                    fmt.println()
+                }
+            }
+        }
+        for p, i in ms.blue_players {
+            if p.current_zone == zone {
+                fmt.print("  Blue: ", p.name, p.position)
+                if ms.team_with_ball == .Blue && ms.player_with_ball == i {
+                    fmt.println(" (Has ball)")
+                } else {
+                    fmt.println()
+                }
+            }
+        }
+    }
+}
+
 make_team :: proc(team:Team) -> [11]Player {
     players : [11]Player
     starting_zones := blue_starting_zones if team == .Blue else red_starting_zones
@@ -85,6 +114,6 @@ make_match :: proc(starting_team:Team) -> MatchState {
 }
 
 main :: proc() {
-    make_match(.Blue)
-    fmt.println("Hello world")
+    ms := make_match(.Blue)
+    print_match_state(ms)
 }
