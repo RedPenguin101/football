@@ -30,12 +30,20 @@ players_in_zone :: proc(ms:MatchState, side, zone:int) -> PlayerSet {
     return ps
 }
 
-zone_score :: proc(ms:MatchState, side:int, side_weight:=1) -> [ZONES]int {
+player_counts_in_zone :: proc(ms:MatchState, zone:int) -> (blue, red: int) {
+    return card(players_in_zone(ms, BLUE, zone)), card(players_in_zone(ms, RED, zone))
+}
+
+zone_advantage :: proc(ms:MatchState, side, zone: int, side_weight:=1) -> int {
+    blues := card(players_in_zone(ms, BLUE, zone))
+    reds  := card(players_in_zone(ms, RED, zone))
+    return side == BLUE ? (blues*side_weight)-reds : (reds*side_weight)-blues
+}
+
+zone_advantage_all :: proc(ms:MatchState, side:int, side_weight:=1) -> [ZONES]int {
     zs : [ZONES]int
     for i in 0..<ZONES {
-        blues := card(players_in_zone(ms, BLUE, i))
-        reds  := card(players_in_zone(ms, RED, i))
-        zs[i] = side == BLUE ? (blues*side_weight)-reds : (reds*side_weight)-blues
+        zs[i] = zone_advantage(ms, side, i, side_weight)
     }
     return zs
 }
@@ -109,5 +117,8 @@ main :: proc() {
     /* fmt.println("\nZone Scores\n-----------") */
     /* fmt.println(zone_score(ms, BLUE)) */
     fmt.println("\nActionPhase\n---------")
-    decide_action(ms)
+    a, z := decide_action(ms)
+    report := action_outcome(ms, a, z)
+    fmt.println(report)
+    print_action_report(ms, report)
 }
