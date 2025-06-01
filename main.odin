@@ -1,9 +1,14 @@
 package football
 
-import "core:fmt"
+import "core:log"
 
 BLUE :: 0
 RED :: 1
+
+other_team :: proc(team:int) -> int {
+    if team == BLUE do return RED
+    else do return BLUE
+}
 
 Position :: enum {
     G,
@@ -20,9 +25,9 @@ Player :: struct {
 
 PlayerSet :: bit_set[0..<11]
 
-players_in_zone :: proc(ms:MatchState, side, zone:int) -> PlayerSet {
+players_in_zone :: proc(ms:MatchState, team, zone:int) -> PlayerSet {
     ps : PlayerSet
-    for player, i in ms.players[side] {
+    for player, i in ms.players[team] {
         if player.current_zone == zone {
             ps += {i}
         }
@@ -34,16 +39,33 @@ player_counts_in_zone :: proc(ms:MatchState, zone:int) -> (blue, red: int) {
     return card(players_in_zone(ms, BLUE, zone)), card(players_in_zone(ms, RED, zone))
 }
 
-zone_advantage :: proc(ms:MatchState, side, zone: int, side_weight:=1) -> int {
-    blues := card(players_in_zone(ms, BLUE, zone))
-    reds  := card(players_in_zone(ms, RED, zone))
-    return side == BLUE ? (blues*side_weight)-reds : (reds*side_weight)-blues
+random_player_from_zone :: proc(ms:MatchState, team, zone:int) -> int {
+    candidates := players_in_zone(ms, team, zone)
+    count := card(candidates)
+    if count == 0 {
+        log.errorf("call dn with 0")
+    }
+    roll := dn(count)
+    nth := 0
+    for i in 0..<11 {
+        if i in candidates do nth += 1
+        if nth == roll {
+            return i
+        }
+    }
+    panic("random player from zone fail")
 }
 
-zone_advantage_all :: proc(ms:MatchState, side:int, side_weight:=1) -> [ZONES]int {
+zone_advantage :: proc(ms:MatchState, team, zone: int, team_weight:=1) -> int {
+    blues := card(players_in_zone(ms, BLUE, zone))
+    reds  := card(players_in_zone(ms, RED, zone))
+    return team == BLUE ? (blues*team_weight)-reds : (reds*team_weight)-blues
+}
+
+zone_advantage_all :: proc(ms:MatchState, team:int, team_weight:=1) -> [ZONES]int {
     zs : [ZONES]int
     for i in 0..<ZONES {
-        zs[i] = zone_advantage(ms, side, i, side_weight)
+        zs[i] = zone_advantage(ms, team, i, team_weight)
     }
     return zs
 }
@@ -90,35 +112,21 @@ MatchState :: struct {
     blue_goals: int,
 }
 
-print_match_state :: proc(ms:MatchState) {
-    fmt.println("Match State: minute is", ms.minute, "ball is in zone", ms.ball.zone,
-                "with player", ms.players[ms.ball.team][ms.ball.player].name)
-    for z, i in zone_names {
-        fmt.println(z)
-        blues := players_in_zone(ms, BLUE, i)
-        for i in 0..<11 {
-            if i in blues do fmt.println(" BLUE:", ms.players[BLUE][i].name)
-        }
-        reds :=  players_in_zone(ms, RED, i)
-        for i in 0..<11 {
-            if i in reds do fmt.println(" RED:", ms.players[RED][i].name)
-        }
-    }
-}
-
 main :: proc() {
+    context.logger = log.create_console_logger()
+    context.logger.lowest_level = .Debug
+    defer log.destroy_console_logger(context.logger)
+
     ms : MatchState
+    ms.minute = 0
     ms.players[BLUE] = man_utd
     ms.players[RED] = liverpool
     ms.ball = Ball{2, BLUE, 3}
-    print_match_state(ms)
-    /* fmt.println("\nAction Score\n------------") */
-    /* fmt.println(action_scores(ms.ball.team, ms.ball.zone)) */
-    /* fmt.println("\nZone Scores\n-----------") */
-    /* fmt.println(zone_score(ms, BLUE)) */
-    fmt.println("\nActionPhase\n---------")
-    a, z := decide_action(ms)
-    report := action_outcome(ms, a, z)
-    fmt.println(report)
-    print_action_report(ms, report)
+
+    for ms.minute < 90 {
+        a, z := decide_action(ms)
+        report := action_outcome(ms, a, z)
+        log.info(comment(ms, report))
+        tick_match_state(&ms, report)
+    }
 }

@@ -41,15 +41,15 @@ BACKWARD :: 1
 LEFT     :: 2
 RIGHT    :: 3
 
-neighbour_zone :: proc(side, dir, zone: int) -> int {
-    if side == BLUE {
+neighbour_zone :: proc(team, dir, zone: int) -> int {
+    if team == BLUE {
         switch dir {
         case FORWARD:  return blue_forward_zone[zone]
         case BACKWARD: return blue_backward_zone[zone]
         case LEFT:     return blue_left_zone[zone]
         case RIGHT:    return blue_right_zone[zone]
         }
-    } else if side == RED {
+    } else if team == RED {
         switch dir {
         case FORWARD:  return blue_backward_zone[zone]
         case BACKWARD: return blue_forward_zone[zone]
@@ -57,14 +57,14 @@ neighbour_zone :: proc(side, dir, zone: int) -> int {
         case RIGHT:    return blue_left_zone[zone]
         }
     }
-    panic("neighbour zone called for bad side")
+    panic("neighbour zone called for bad team")
 }
 
-neighbour_zones :: proc(side, zone: int) -> [4]int {
+neighbour_zones :: proc(team, zone: int) -> [4]int {
     return [4]int{
-        neighbour_zone(side, FORWARD, zone),
-        neighbour_zone(side, BACKWARD, zone),
-        neighbour_zone(side, LEFT, zone),
-        neighbour_zone(side, RIGHT, zone),
+        neighbour_zone(team, FORWARD, zone),
+        neighbour_zone(team, BACKWARD, zone),
+        neighbour_zone(team, LEFT, zone),
+        neighbour_zone(team, RIGHT, zone),
     }
 }

@@ -66,7 +66,7 @@ The outcome of the action has various impacts on the game state:
   took (a goal can be several minutes, a short pass a fraction of a minute)
 - The active player can change
 - The active zone can change
-- The zone of any or all player on either side can change
+- The zone of any or all player on either team can change
 
 Each player has a defined position or role, such as center back. The
 players role has an impact on how they act during an action. A center
@@ -113,7 +113,7 @@ rounds might be based on player attributes, team instructions and
 gamemaster modifications.
 
 Once all modification rounds are finished, the numbers are summed to
-n, an n-sided dice is rolled and the and the action is chosen.
+n, an n-teamd dice is rolled and the and the action is chosen.
 
 Assume F5 (a forward pass into zone 5) is chosen. The possible
 outcomes are a successful pass and an interception. There is first a
