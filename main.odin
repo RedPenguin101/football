@@ -2,23 +2,8 @@ package football
 
 import "core:fmt"
 
-ZONES :: 11
 BLUE :: 0
 RED :: 1
-
-zone_names :: [ZONES]string {
-    "Blue Goal Box",
-    "Blue Defence Left",
-    "Blue Defence Center",
-    "Blue Defence Right",
-    "Midfield Left",
-    "Midfield Center",
-    "Midfield Right",
-    "Red Defence Left",
-    "Red Defence Center",
-    "Red Defence Right",
-    "Red Goal Box",
-}
 
 Position :: enum {
     G,
@@ -43,6 +28,16 @@ players_in_zone :: proc(ms:MatchState, side, zone:int) -> PlayerSet {
         }
     }
     return ps
+}
+
+zone_score :: proc(ms:MatchState, side:int, side_weight:=1) -> [ZONES]int {
+    zs : [ZONES]int
+    for i in 0..<ZONES {
+        blues := card(players_in_zone(ms, BLUE, i))
+        reds  := card(players_in_zone(ms, RED, i))
+        zs[i] = side == BLUE ? (blues*side_weight)-reds : (reds*side_weight)-blues
+    }
+    return zs
 }
 
 man_utd := [11]Player{
@@ -73,8 +68,6 @@ liverpool := [11]Player{
     Player{"Owen", .FC, 2},
 }
 
-Team :: enum { Red, Blue }
-
 Ball :: struct {
     zone : int,
     team : int,
@@ -88,8 +81,6 @@ MatchState :: struct {
     red_goals: int,
     blue_goals: int,
 }
-
-
 
 print_match_state :: proc(ms:MatchState) {
     fmt.println("Match State: minute is", ms.minute, "ball is in zone", ms.ball.zone,
@@ -113,4 +104,10 @@ main :: proc() {
     ms.players[RED] = liverpool
     ms.ball = Ball{2, BLUE, 3}
     print_match_state(ms)
+    /* fmt.println("\nAction Score\n------------") */
+    /* fmt.println(action_scores(ms.ball.team, ms.ball.zone)) */
+    /* fmt.println("\nZone Scores\n-----------") */
+    /* fmt.println(zone_score(ms, BLUE)) */
+    fmt.println("\nActionPhase\n---------")
+    decide_action(ms)
 }
