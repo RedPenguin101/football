@@ -1,0 +1,28 @@
+Notes on a Football Management Game
+-----------------------------------
+
+The idea isn't to simulate football, it's to echo the feeling of being
+a football fan. The heightened highs and lowered lows. Homegrown
+heros, agonizing let-downs from high profile signings. Staying far
+away from the minutia of tactical settings and training schedules. No
+freaking work permits, jesus christ.
+
+When Lolujo plays FM, the tactics are not interesting. The long term
+storytelling is interesting. Climbing up the leagues with a talismanic
+youngster matching every new challenge. At his best he creates
+personalities for the players, creates a bond between them and the
+viewer. But the game should be doing more to help with that.
+
+To sum up in a sentence, the primary goal of the game is to create an
+attachment between the manager and their players.
+
+The top focuses of the game:
+
+1. A simple match engine that generates memorable narratives. Nothing
+   too obvious, but the last minutes of cup finals should be dramatic.
+   No huge array of tactical options.
+2. Transfers should be tense, poker like. Maybe an auction system.
+   Create a real sunk-cost fallacy feeling in the player.
+3. A player interaction / event system almost like Crusader Kings, where
+   situations involving your players come up, and create braching b-stories
+   which can continue over weeks and months.

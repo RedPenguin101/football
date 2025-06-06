@@ -55,6 +55,9 @@ action_scores :: proc(team, zone: int) -> ActionScore {
         case 6:
             return ActionScore{.Z=1, .L=3, .R=0,
                                .F=3, .B=1, .D=4, .S=1}
+        case 7:
+            return ActionScore{.Z=2, .L=0, .R=4,
+                               .F=0, .B=1, .D=0, .S=1}
         case 8:
             return ActionScore{.Z=1, .L=1, .R=1,
                                .F=3, .B=1, .D=4, .S=3}
@@ -88,6 +91,9 @@ action_scores :: proc(team, zone: int) -> ActionScore {
         case 4:
             return ActionScore{.Z=1, .L=3, .R=0,
                                .F=3, .B=1, .D=4, .S=1}
+        case 3:
+            return ActionScore{.Z=2, .L=0, .R=4,
+                               .F=0, .B=1, .D=0, .S=1}
         case 2:
             return ActionScore{.Z=1, .L=1, .R=1,
                                .F=3, .B=1, .D=3, .S=4}
