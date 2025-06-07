@@ -28,21 +28,14 @@ Player :: struct {
 PlayerSet :: bit_set[0..<11]
 
 players_in_zone :: proc(ms:MatchState, team, zone:int) -> PlayerSet {
-    log.debug("looking for", "blue" if team == 0 else "red", "players in zone", zone)
-    //log.debug("  ", ms.players[team])
     ps : PlayerSet
     assert(zone >= 0)
     for player, i in ms.players[team] {
         if player.current_zone == zone {
-            log.debug("  ", player.name, "is in zone", player.current_zone)
             ps += {i}
         }
     }
     return ps
-}
-
-player_counts_in_zone :: proc(ms:MatchState, zone:int) -> (blue, red: int) {
-    return card(players_in_zone(ms, BLUE, zone)), card(players_in_zone(ms, RED, zone))
 }
 
 random_player_from_set :: proc(ps:PlayerSet) -> int {
@@ -55,37 +48,6 @@ random_player_from_set :: proc(ps:PlayerSet) -> int {
         if idx == roll do return i
     }
     panic("Failed to pick random player")
-}
-
-random_player_from_zone :: proc(ms:MatchState, team, zone:int) -> int {
-    candidates := players_in_zone(ms, team, zone)
-    count := card(candidates)
-    if count == 0 {
-        log.errorf("call dn with 0")
-    }
-    roll := dn(count)
-    nth := 0
-    for i in 0..<11 {
-        if i in candidates do nth += 1
-        if nth == roll {
-            return i
-        }
-    }
-    panic("random player from zone fail")
-}
-
-zone_advantage :: proc(ms:MatchState, team, zone: int, team_weight:=1) -> int {
-    blues := card(players_in_zone(ms, BLUE, zone))
-    reds  := card(players_in_zone(ms, RED, zone))
-    return team == BLUE ? (blues*team_weight)-reds : (reds*team_weight)-blues
-}
-
-zone_advantage_all :: proc(ms:MatchState, team:int, team_weight:=1) -> [ZONES]int {
-    zs : [ZONES]int
-    for i in 0..<ZONES {
-        zs[i] = zone_advantage(ms, team, i, team_weight)
-    }
-    return zs
 }
 
 man_utd := [11]Player{
@@ -162,9 +124,7 @@ main :: proc() {
     ms.ball = Ball{2, BLUE, 3}
 
     for ms.minute < 90 {
-        log.debug("STARTING TURN: team", ms.ball.team, "player", ms.players[ms.ball.team][ms.ball.player].name, "zone", ms.ball.zone)
         a, z := decide_action(ms)
-        log.debugf("action: %v, zone: %v", a, z)
         report := action_outcome(ms, a, z)
         cm := comment(ms, report)
         log.info(cm)

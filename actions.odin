@@ -29,79 +29,6 @@ target_zones :: proc(team, zone:int) -> [Action]int {
     }
 }
 
-ActionScore :: [Action]int
-
-action_scores :: proc(team, zone: int) -> ActionScore {
-    if team == BLUE {
-        switch zone {
-        case 0:
-            return ActionScore{.Z=0, .L=3, .R=3,
-                               .F=3, .B=0, .D=1, .S=0}
-        case 1:
-            return ActionScore{.Z=1, .L=0, .R=3,
-                               .F=5, .B=2, .D=4, .S=1}
-        case 2:
-            return ActionScore{.Z=2, .L=3, .R=3,
-                               .F=5, .B=1, .D=4, .S=1}
-        case 3:
-            return ActionScore{.Z=1, .L=3, .R=0,
-                               .F=5, .B=2, .D=4, .S=1}
-        case 4:
-            return ActionScore{.Z=1, .L=0, .R=3,
-                               .F=3, .B=1, .D=4, .S=1}
-        case 5:
-            return ActionScore{.Z=3, .L=3, .R=3,
-                               .F=4, .B=2, .D=5, .S=2}
-        case 6:
-            return ActionScore{.Z=1, .L=3, .R=0,
-                               .F=3, .B=1, .D=4, .S=1}
-        case 7:
-            return ActionScore{.Z=2, .L=0, .R=4,
-                               .F=0, .B=1, .D=0, .S=1}
-        case 8:
-            return ActionScore{.Z=1, .L=1, .R=1,
-                               .F=3, .B=1, .D=4, .S=3}
-        case 9:
-            return ActionScore{.Z=2, .L=4, .R=0,
-                               .F=0, .B=1, .D=0, .S=1}
-        case 10:
-            return ActionScore{.Z=0, .L=0, .R=0,
-                               .F=0, .B=1, .D=0, .S=5}
-        }
-    } else {
-        switch zone {
-        case 10:
-            return ActionScore{.Z=0, .L=3, .R=3,
-                               .F=3, .B=0, .D=1, .S=0}
-        case 9:
-            return ActionScore{.Z=1, .L=0, .R=3,
-                               .F=5, .B=2, .D=4, .S=1}
-        case 8:
-            return ActionScore{.Z=2, .L=3, .R=3,
-                               .F=5, .B=1, .D=4, .S=1}
-        case 7:
-            return ActionScore{.Z=1, .L=3, .R=0,
-                               .F=5, .B=2, .D=4, .S=1}
-        case 6:
-            return ActionScore{.Z=1, .L=0, .R=3,
-                               .F=3, .B=1, .D=4, .S=1}
-        case 5:
-            return ActionScore{.Z=3, .L=3, .R=3,
-                               .F=4, .B=2, .D=5, .S=2}
-        case 4:
-            return ActionScore{.Z=1, .L=3, .R=0,
-                               .F=3, .B=1, .D=4, .S=1}
-        case 3:
-            return ActionScore{.Z=2, .L=0, .R=4,
-                               .F=0, .B=1, .D=0, .S=1}
-        case 2:
-            return ActionScore{.Z=1, .L=1, .R=1,
-                               .F=3, .B=1, .D=3, .S=4}
-        }
-    }
-    log.panicf("DEBUG: Unrecognized team/zone combo, %d, %d", team, zone)
-}
-
 decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
     my_team := ms.ball.team
     me := ms.ball.player
@@ -117,10 +44,8 @@ decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
     for a in Action {
         target_zone := target_zones[a]
         if target_zone == -1 do continue
-        log.debug("trying action", a, "zone", target_zone)
         target_players := card(players_in_zone(ms, my_team, target_zone))
         if a == .Z do target_players -= 1
-        log.debug("target players", target_players)
         if a == .D && me == 0 {
             // goalkeepers don't dribble
             action_scores[a] = 0
@@ -130,11 +55,9 @@ decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
             opp_players_in_zone := card(players_in_zone(ms, other_team(my_team), target_zone))
             action_scores[a] = target_players - opp_players_in_zone + 4
         }
-        log.debug("action score", action_scores[a])
     }
 
     chosen_action := action_roll(action_scores)
-    log.debugf("chose action %v, zone %d", chosen_action, target_zones[chosen_action])
     return chosen_action, target_zones[chosen_action]
 }
 
@@ -166,8 +89,8 @@ action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionRepor
     my_team := ms.ball.team
     opp_team := other_team(my_team)
 
-    my_in_current_zone  := players_in_zone(ms, my_team, ms.ball.zone)
-    opp_in_current_zone := players_in_zone(ms, opp_team, ms.ball.zone)
+    my_in_current_zone  := players_in_zone(ms, my_team, ar.start_zone)
+    opp_in_current_zone := players_in_zone(ms, opp_team, ar.start_zone)
 
     // The player first needs to get out of the current zone
     // if there are no opp players in the current zone the player gets out of the zone.
@@ -180,7 +103,7 @@ action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionRepor
             ar.success = false
             ar.end_team = opp_team
             ar.end_zone = ar.start_zone
-            ar.end_player = random_player_from_zone(ms, opp_team, ar.start_zone)
+            ar.end_player = random_player_from_set(opp_in_current_zone)
             return ar
         }
     }
@@ -205,7 +128,7 @@ action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionRepor
     if roll <= win {
         ar.success = false
         ar.end_team = opp_team
-        ar.end_player = random_player_from_zone(ms, opp_team, zone)
+        ar.end_player = random_player_from_set(opp_in_target_zone)
     } else {
         ar.success = false
         ar.end_team = ar.start_team

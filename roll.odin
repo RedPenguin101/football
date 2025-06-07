@@ -14,7 +14,6 @@ dn :: proc(n:int) -> int {
 }
 
 action_roll :: proc(action_scores:[Action]int) -> Action {
-    log.debug(action_scores)
     die_size := 0
     for s in action_scores {
         die_size += s
@@ -24,7 +23,6 @@ action_roll :: proc(action_scores:[Action]int) -> Action {
         log.warnf("%d", die_size)
     }
     roll := dn(die_size)
-    log.debug("die size", die_size, "roll", roll)
     acc := 0
     for score, action in action_scores {
         acc += score
