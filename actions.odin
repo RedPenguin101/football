@@ -130,7 +130,7 @@ action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionRepor
         ar.end_team = opp_team
         ar.end_player = random_player_from_set(opp_in_target_zone)
     } else {
-        ar.success = false
+        ar.success = true
         ar.end_team = ar.start_team
         ar.end_player = ar.start_player
     }
