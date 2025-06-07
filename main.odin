@@ -117,6 +117,7 @@ main :: proc() {
         }
     }
 
+    PRINT_REPORTS :: true
     ms : MatchState
     ms.minute = 0
     ms.players[BLUE] = man_utd
@@ -126,9 +127,13 @@ main :: proc() {
     for ms.minute < 90 {
         a, z := decide_action(ms)
         report := action_outcome(ms, a, z)
-        cm := comment(ms, report)
-        log.info(cm)
-        delete(cm)
+        if PRINT_REPORTS {
+            cm := comment(ms, report)
+            fmt.println(cm)
+            delete(cm)
+        }
         tick_match_state(&ms, report)
     }
+
+    fmt.println("Match Score: ManUtd", ms.blue_goals, "Liverpool", ms.red_goals)
 }
