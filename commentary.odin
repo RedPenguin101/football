@@ -7,24 +7,24 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
 
     switch ar.action {
     case .Z: {
-        strings.write_string(&b, "Blue " if ar.team == BLUE else "Red ")
+        strings.write_string(&b, "ManUtd " if ar.start_team == BLUE else "Livpl ")
         strings.write_string(&b, "are passing it around")
         if !ar.success {
             strings.write_string(&b, " but ")
-            strings.write_string(&b, ms.players[ar.new_team][ar.new_player].name)
+            strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
             strings.write_string(&b, " manages to take it away!")
         }
     }
     case .D: {
-        strings.write_string(&b, ms.players[ar.team][ar.player].name)
+        strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
         strings.write_string(&b, " carries the ball forward")
         if !ar.success {
             strings.write_string(&b, " but is tackled by ")
-            strings.write_string(&b, ms.players[ar.new_team][ar.new_player].name)
+            strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
         }
     }
     case .F: {
-        strings.write_string(&b, ms.players[ar.team][ar.player].name)
+        strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
         strings.write_string(&b, " passes the ball forward")
         if ar.success {
             strings.write_string(&b, " to ")
@@ -32,10 +32,10 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
         else {
             strings.write_string(&b, " but it's intercepted by ")
         }
-        strings.write_string(&b, ms.players[ar.new_team][ar.new_player].name)
+        strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
     }
     case .B: {
-        strings.write_string(&b, ms.players[ar.team][ar.player].name)
+        strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
         strings.write_string(&b, " passes the ball backward")
         if ar.success {
             strings.write_string(&b, " to ")
@@ -43,10 +43,10 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
         else {
             strings.write_string(&b, " but it's intercepted by ")
         }
-        strings.write_string(&b, ms.players[ar.new_team][ar.new_player].name)
+        strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
     }
     case .L: {
-        strings.write_string(&b, ms.players[ar.team][ar.player].name)
+        strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
         strings.write_string(&b, " passes the ball to the left")
         if ar.success {
             strings.write_string(&b, " to ")
@@ -54,10 +54,10 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
         else {
             strings.write_string(&b, " but it's intercepted by ")
         }
-        strings.write_string(&b, ms.players[ar.new_team][ar.new_player].name)
+        strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
     }
     case .R: {
-        strings.write_string(&b, ms.players[ar.team][ar.player].name)
+        strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
         strings.write_string(&b, " passes the ball to the right")
         if ar.success {
             strings.write_string(&b, " to ")
@@ -65,11 +65,16 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
         else {
             strings.write_string(&b, " but it's intercepted by ")
         }
-        strings.write_string(&b, ms.players[ar.new_team][ar.new_player].name)
+        strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
     }
     case .S: {
-        strings.write_string(&b, ms.players[ar.team][ar.player].name)
+        strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
         strings.write_string(&b, " Has a go at goal!")
+        if ar.success {
+            strings.write_string(&b, " GOOOOOAL!!!")
+        } else {
+            strings.write_string(&b, " But the keeper collects it")
+        }
     }
     }
 

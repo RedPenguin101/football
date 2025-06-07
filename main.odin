@@ -1,6 +1,8 @@
 package football
 
 import "core:log"
+import "core:mem"
+import "core:fmt"
 
 BLUE :: 0
 RED :: 1
@@ -26,9 +28,13 @@ Player :: struct {
 PlayerSet :: bit_set[0..<11]
 
 players_in_zone :: proc(ms:MatchState, team, zone:int) -> PlayerSet {
+    log.debug("looking for", "blue" if team == 0 else "red", "players in zone", zone)
+    //log.debug("  ", ms.players[team])
     ps : PlayerSet
+    assert(zone >= 0)
     for player, i in ms.players[team] {
         if player.current_zone == zone {
+            log.debug("  ", player.name, "is in zone", player.current_zone)
             ps += {i}
         }
     }
@@ -37,6 +43,18 @@ players_in_zone :: proc(ms:MatchState, team, zone:int) -> PlayerSet {
 
 player_counts_in_zone :: proc(ms:MatchState, zone:int) -> (blue, red: int) {
     return card(players_in_zone(ms, BLUE, zone)), card(players_in_zone(ms, RED, zone))
+}
+
+random_player_from_set :: proc(ps:PlayerSet) -> int {
+    count := card(ps)
+    assert(count > 0)
+    roll := dn(count)
+    idx := 0
+    for i in 0..<11 {
+        if i in ps do idx += 1
+        if idx == roll do return i
+    }
+    panic("Failed to pick random player")
 }
 
 random_player_from_zone :: proc(ms:MatchState, team, zone:int) -> int {
@@ -114,7 +132,7 @@ MatchState :: struct {
 
 main :: proc() {
     context.logger = log.create_console_logger()
-    context.logger.lowest_level = .Debug
+    context.logger.lowest_level = .Info
     defer log.destroy_console_logger(context.logger)
     when ODIN_DEBUG {
         context.logger.lowest_level = .Debug
@@ -144,9 +162,13 @@ main :: proc() {
     ms.ball = Ball{2, BLUE, 3}
 
     for ms.minute < 90 {
+        log.debug("STARTING TURN: team", ms.ball.team, "player", ms.players[ms.ball.team][ms.ball.player].name, "zone", ms.ball.zone)
         a, z := decide_action(ms)
+        log.debugf("action: %v, zone: %v", a, z)
         report := action_outcome(ms, a, z)
-        log.info(comment(ms, report))
+        cm := comment(ms, report)
+        log.info(cm)
+        delete(cm)
         tick_match_state(&ms, report)
     }
 }

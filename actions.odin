@@ -15,7 +15,7 @@ action_names := [Action]string {
         .S = "Shoot",
 }
 
-passes := bit_set[Action]{.B,.L,.R,.F}
+passes := bit_set[Action]{.B,.L,.R,.F,.Z}
 
 target_zones :: proc(team, zone:int) -> [Action]int {
     return {
@@ -103,128 +103,223 @@ action_scores :: proc(team, zone: int) -> ActionScore {
 }
 
 decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
-    team := ms.ball.team
-    zone := ms.ball.zone
-    as := action_scores(team, zone)
-    tz := target_zones(team, zone)
-    zone_scores := zone_advantage_all(ms, team)
-    for ac in Action {
-        t_zone := tz[ac]
-        if t_zone < 0 {
-            as[action] = 0
-        } else
-        {
-            blues, reds := player_counts_in_zone(ms, t_zone)
-            my_teammates := ms.ball.team == BLUE ? blues : reds
-            opp_teammates := ms.ball.team == BLUE ? reds : blues
+    my_team := ms.ball.team
+    me := ms.ball.player
+    current_zone := ms.ball.zone
 
-            if (my_teammates == 0 && ac in passes) {
-                // if it's a pass, and there are no teammates there,
-                // don't pass it!
-                as[ac] = 0
-            } else {
-                player_advantage := my_teammates - opp_teammates
-                if ms.ball.team == RED do player_advantage *= -1
-                as[ac] += player_advantage
-            }
+    // Given each potential action, which zone will a successful execution of that
+    // action end up in?
+    target_zones := target_zones(my_team, current_zone)
+
+    // for each zone, what is the relative advantage my team has in the zone?
+    action_scores : [Action]int
+
+    for a in Action {
+        target_zone := target_zones[a]
+        if target_zone == -1 do continue
+        log.debug("trying action", a, "zone", target_zone)
+        target_players := card(players_in_zone(ms, my_team, target_zone))
+        if a == .Z do target_players -= 1
+        log.debug("target players", target_players)
+        if a == .D && me == 0 {
+            // goalkeepers don't dribble
+            action_scores[a] = 0
+        } else if a in passes && target_players == 0 {
+            action_scores[a] = 0
+        } else {
+            opp_players_in_zone := card(players_in_zone(ms, other_team(my_team), target_zone))
+            action_scores[a] = target_players - opp_players_in_zone + 4
         }
+        log.debug("action score", action_scores[a])
     }
-    chosen := action_roll(as)
-    return chosen, tz[chosen]
+
+    chosen_action := action_roll(action_scores)
+    log.debugf("chose action %v, zone %d", chosen_action, target_zones[chosen_action])
+    return chosen_action, target_zones[chosen_action]
 }
 
 ActionReport :: struct {
-    success : bool,
-    team : int,
-    player : int,
-    from_zone : int,
+    start_team : int,
+    start_player : int,
+    start_zone : int,
+
     action : Action,
-    to_zone : int,
+    target_zone : int,
+    success : bool,
 
-    execution_score : int,
-
-    outcome_dice_size : int,
-    outcome_win_score : int,
-    outcome_roll : int,
-
-    new_team : int,
-    new_player : int
+    end_team : int,
+    end_player : int,
+    end_zone : int,
 }
 
-action_outcome :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     ar : ActionReport
-    ar.action = a
-    ar.team = ms.ball.team
-    ar.player = ms.ball.player
-    ar.from_zone = ms.ball.zone
-    ar.to_zone = zone
+    ar.start_team = ms.ball.team
+    ar.start_player = ms.ball.player
+    ar.start_zone = ms.ball.zone
 
-    // An execution score is obtained by rolling a d20.
-    // 1 and 20 are critical successes and failures respectively.
+    ar.target_zone = zone
+    ar.action = a
 
     execution_score := d20()
-    ar.execution_score = execution_score
-    if execution_score == 1 do ar.success = false
-    if execution_score == 20 do ar.success = true
-    else {
-        // Otherwise we have to actually calculate the outcomes.
 
-        // The outcome is affected by your relative strength in the
-        // target zone. A decent execution will improve your chances
-        // of completing the action by multiplying the 'weighting' of
-        // your own team's presence in the zone.
+    my_team := ms.ball.team
+    opp_team := other_team(my_team)
 
-        miskick := execution_score <= 4
+    my_in_current_zone  := players_in_zone(ms, my_team, ms.ball.zone)
+    opp_in_current_zone := players_in_zone(ms, opp_team, ms.ball.zone)
 
-        blues, reds := player_counts_in_zone(ms, zone)
-
-        if !miskick {
-            if ar.team == BLUE {
-                blues *= 2
-            } else {
-                reds *= 2
-            }
-        }
-
-        if blues+reds == 0 {
-            if a != .D {
-                log.error("target zone has no people in it, but trying to pass into it!")
-            }
-            // if we're dribbling into an empty area, just win
-            // TODO: dribbing should also factor in the presence in the CURRENT
-            // zone when calculating
-            ar.success = true
-        } else {
-            roll := dn(blues+reds)
-            win_score := 1 + (ar.team == BLUE ? reds : blues)
-            ar.outcome_dice_size = blues + reds
-            ar.outcome_win_score = win_score
-            ar.outcome_roll = roll
-            ar.success = roll >= win_score
+    // The player first needs to get out of the current zone
+    // if there are no opp players in the current zone the player gets out of the zone.
+    // if the player rolls a crit on the play, they get out of the zone regardless of opp players.
+    if card(opp_in_current_zone) > 0 && execution_score < 20 {
+        advantage := card(my_in_current_zone) - card(opp_in_current_zone)
+        roll := d20()
+        win  := 10 - 3*advantage
+        if roll <= win {
+            ar.success = false
+            ar.end_team = opp_team
+            ar.end_zone = ar.start_zone
+            ar.end_player = random_player_from_zone(ms, opp_team, ar.start_zone)
+            return ar
         }
     }
 
+    // repeat the process for the target zone
+    my_in_target_zone  := players_in_zone(ms, my_team, zone)
+    opp_in_target_zone := players_in_zone(ms, opp_team, zone)
 
-    if ar.success {
-        ar.new_team = ar.team
-        log.debugf("getting random player from team %d zone %d", ar.team, ar.to_zone)
-        ar.new_player = ar.action == .D ? ar.player : random_player_from_zone(ms, ar.team, ar.to_zone)
+    if card(opp_in_target_zone) == 0 || execution_score == 20 {
+        ar.success = true
+        ar.end_team = ar.start_team
+        ar.end_zone = zone
+        ar.end_player = ar.start_player
+        return ar
     }
-    else {
-        ar.new_team = other_team(ar.team)
-        log.debugf("getting random player from team %d zone %d", ar.team, ar.to_zone)
-        ar.new_player = random_player_from_zone(ms, ar.new_team, ar.to_zone)
+
+    ar.end_zone = zone
+
+    advantage := card(my_in_target_zone) + 1 - card(opp_in_target_zone)
+    roll := d20()
+    win := 10 - 3*advantage
+    if roll <= win {
+        ar.success = false
+        ar.end_team = opp_team
+        ar.end_player = random_player_from_zone(ms, opp_team, zone)
+    } else {
+        ar.success = false
+        ar.end_team = ar.start_team
+        ar.end_player = ar.start_player
     }
 
     return ar
 }
 
-tick_match_state :: proc(ms:^MatchState, ar:ActionReport) {
-    ms.ball.team = ar.new_team
-    ms.ball.player = ar.new_player
-    ms.ball.zone = ar.to_zone
+action_outcome_shot :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+    assert(zone == 0 || zone == 10)
 
-    if ar.action == .D do ms.players[ar.team][ar.player].current_zone = ar.to_zone
+    ar : ActionReport
+    ar.start_team = ms.ball.team
+    ar.start_player = ms.ball.player
+    ar.start_zone = ms.ball.zone
+
+    ar.target_zone = zone
+    ar.action = a
+
+    my_team := ms.ball.team
+    opp_team := other_team(my_team)
+
+    // whether success or failure the ball always ends up with the keeper because we don't
+    // do kickoffs yet
+    ar.end_team = opp_team
+    ar.end_player = 0
+    ar.end_zone = zone
+
+    // shot success chance is affected by distance to the goal
+    distance:int
+
+    if my_team == BLUE {
+        if ar.start_zone == 10 do distance = 0
+        else if ar.start_zone == 8 do distance = 1
+        else if ar.start_zone > 6 do distance = 2
+        else if ar.start_zone > 3 do distance = 3
+        else do distance = 4
+    } else {
+        if ar.start_zone == 0 do distance = 0
+        else if ar.start_zone == 2 do distance = 1
+        else if ar.start_zone < 4 do distance = 2
+        else if ar.start_zone < 7 do distance = 3
+        else do distance = 4
+    }
+
+    // If the opponent has equal or more players than us in the zone we shoot
+    // from, we are assumed to be under pressure and therefore at a disadvantage
+
+    my_in_current_zone  := players_in_zone(ms, my_team, ar.start_zone)
+    opp_in_current_zone := players_in_zone(ms, opp_team, ar.start_zone)
+    pressure_modifier := card(opp_in_current_zone) - card(my_in_current_zone)
+    pressure_modifier = max(pressure_modifier, 0)
+
+    // There is also a modifier for players in the target zone - that is a chance for the
+    // shot to be be blocked or stopped
+    my_in_target_zone  := players_in_zone(ms, my_team, zone)
+    opp_in_target_zone := players_in_zone(ms, opp_team, zone)
+    congestion := card(opp_in_current_zone) - card(my_in_current_zone)
+
+    roll := d20()
+    win := 10 + distance + pressure_modifier + congestion
+    ar.success = roll >= win
+
+    return ar
+}
+
+
+action_outcome_pass :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+    ar : ActionReport
+    ar.start_team = ms.ball.team
+    ar.start_player = ms.ball.player
+    ar.start_zone = ms.ball.zone
+
+    ar.target_zone = zone
+    ar.action = a
+
+    my_team := ms.ball.team
+    opp_team := other_team(my_team)
+    my_in_target_zone  := players_in_zone(ms, my_team, zone)
+    opp_in_target_zone := players_in_zone(ms, opp_team, zone)
+
+    // remove yourself as a target if the pass is within the zone.
+    if a == .Z {
+        my_in_target_zone = my_in_target_zone - PlayerSet{ar.start_player}
+    }
+
+    assert(card(my_in_target_zone) > 0)
+
+    // TODO: Actually implement some checks here
+    ar.success = true
+    ar.end_team = ar.start_team
+    ar.end_zone = zone
+    ar.end_player = random_player_from_set(my_in_target_zone)
+
+    return ar
+}
+
+
+action_outcome :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+    assert(zone >= 0)
+    assert(zone <= 10)
+
+    if a == .D do return action_outcome_dribble(ms,a,zone)
+    if a == .S do return action_outcome_shot(ms,a,zone)
+    else do return action_outcome_pass(ms,a,zone)
+}
+
+tick_match_state :: proc(ms:^MatchState, ar:ActionReport) {
+    ms.ball.team = ar.end_team
+    ms.ball.player = ar.end_player
+    ms.ball.zone = ar.end_zone
+
+    if ar.action == .D do ms.players[ar.start_team][ar.start_player].current_zone = ar.end_zone
 
     ms.minute += 1
 }

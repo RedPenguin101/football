@@ -26,3 +26,19 @@ The top focuses of the game:
 3. A player interaction / event system almost like Crusader Kings, where
    situations involving your players come up, and create braching b-stories
    which can continue over weeks and months.
+
+Academy players
+---------------
+
+There's no 'reserve' or 'under 18' teams. Instead at a set team every
+year the team will get a 'pack' of newly generated players. It should
+work like a gatcha game sort of thing, drawing cards. 10 new
+graduates, with 'cards', and star ratings, and a 'narrative' about
+them based on their hidden stats. The user will "Draw" each card in
+the deck, be able to see the new player, then click 'next' to see the
+next one.
+
+UI
+--
+
+Very CM2 inspired. Hit nostalgia hard.
