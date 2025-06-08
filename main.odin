@@ -40,7 +40,9 @@ players_in_zone :: proc(ms:MatchState, team, zone:int) -> PlayerSet {
 
 random_player_from_set :: proc(ps:PlayerSet) -> int {
     count := card(ps)
-    assert(count > 0)
+    if count == 0 {
+        log.panic("tried to select player from empty set")
+    }
     roll := dn(count)
     idx := 0
     for i in 0..<11 {

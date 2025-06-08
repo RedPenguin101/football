@@ -247,6 +247,8 @@ action_outcome_pass :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
 
     my_team := ms.ball.team
     opp_team := other_team(my_team)
+    my_in_current_zone  := players_in_zone(ms, my_team, ar.start_zone)
+    opp_in_current_zone := players_in_zone(ms, opp_team, ar.start_zone)
     my_in_target_zone  := players_in_zone(ms, my_team, zone)
     opp_in_target_zone := players_in_zone(ms, opp_team, zone)
 
@@ -254,18 +256,42 @@ action_outcome_pass :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     if a == .Z {
         my_in_target_zone = my_in_target_zone - PlayerSet{ar.start_player}
     }
-
     assert(card(my_in_target_zone) > 0)
 
-    // TODO: Actually implement some checks here
-    ar.success = true
-    ar.end_team = ar.start_team
-    ar.end_zone = zone
-    ar.end_player = random_player_from_set(my_in_target_zone)
+    if card(opp_in_current_zone + opp_in_target_zone) == 0 {
+        ar.success = true
+        ar.end_team = ar.start_team
+        ar.end_player = random_player_from_set(my_in_target_zone)
+        ar.end_zone = zone
+        return ar
+    }
+
+    pressure_modifier := card(opp_in_current_zone) - card(my_in_current_zone) - 1
+    t_zone_advantage  := card(my_in_target_zone) - card(opp_in_target_zone)
+
+    win := 10 + pressure_modifier - t_zone_advantage
+    roll := d20()
+
+    if roll >= win {
+        ar.success = true
+        ar.end_zone = zone
+        ar.end_team = ar.start_team
+        ar.end_player = random_player_from_set(my_in_target_zone)
+    } else {
+        ar.success = false
+        ar.end_team = opp_team
+
+        if card(opp_in_target_zone) > 0 {
+            ar.end_zone = zone
+            ar.end_player = random_player_from_set(opp_in_target_zone)
+        } else  {
+            ar.end_zone = ar.start_zone
+            ar.end_player = random_player_from_set(opp_in_current_zone)
+        }
+    }
 
     return ar
 }
-
 
 action_outcome :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     assert(zone >= 0)
