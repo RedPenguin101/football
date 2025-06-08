@@ -1,7 +1,6 @@
 Match Engine
 ------------
 
-- return to natural position: on a shot, all players return to their 'natural' positions
 - start collecting match stats so as to start refining outcome likelihoods
 - implement player stats and impact on outcomes
 - player stats affect the choices they make

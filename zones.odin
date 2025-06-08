@@ -73,3 +73,30 @@ target_zone :: proc(team, zone: int, action:Action) -> int {
     }
     return neighbour_zone(team,dir,zone)
 }
+
+natural_zone :: proc(team:int, pos:Position) -> int {
+    if team == BLUE {
+        switch pos {
+        case .G:  return 0
+        case .BL: return 1
+        case .BC: return 2
+        case .BR: return 3
+        case .ML: return 4
+        case .MC: return 5
+        case .MR: return 6
+        case .FC: return 8
+        }
+    } else {
+        switch pos {
+        case .G:  return 10
+        case .BL: return 9
+        case .BC: return 8
+        case .BR: return 7
+        case .ML: return 6
+        case .MC: return 5
+        case .MR: return 4
+        case .FC: return 2
+        }
+    }
+    panic("unreachable")
+}

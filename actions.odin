@@ -309,6 +309,11 @@ tick_match_state :: proc(ms:^MatchState, ar:ActionReport) {
 
     if ar.action == .D do ms.players[ar.start_team][ar.start_player].current_zone = ar.end_zone
 
+    if ar.action == .S {
+        for &p in ms.players[BLUE] do p.current_zone = natural_zone(BLUE, p.position)
+        for &p in ms.players[RED] do p.current_zone = natural_zone(RED, p.position)
+    }
+
     if ar.action == .S && ar.success {
         if ar.start_team == BLUE do ms.blue_goals += 1
         else do ms.red_goals += 1
