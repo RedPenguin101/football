@@ -20,7 +20,7 @@ action_roll :: proc(action_scores:[Action]int) -> Action {
     }
     // NOTE: possible some -1 being passed here
     if die_size <= 0 {
-        log.warnf("%d", die_size)
+        log.panic("no suitable action", action_scores)
     }
     roll := dn(die_size)
     acc := 0

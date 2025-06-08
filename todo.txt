@@ -1,17 +1,22 @@
 Match Engine
 ------------
 
-- refine action choice so goalkeepers are less likely to shoot
 - implement proper logic for passing success
 - start collecting match stats so as to start refining outcome likelihoods
 - implement player stats and impact on outcomes
 - player stats affect the choices they make
 - UI for match engine
 - refine success so multiple outcomes are possible
-- game tick allows players off the ball to move
+- game tick iterates through non-ball holding players and makes action.
+- vary time advanced based on action
+- Long distribution for goal keepers
+- Actions for long passes over a zone
 - tackles and cards
 - record minute and scorer of goals
 - dribble action should allow for dribble inside when on the advanced flanks
+- ball can go out of play on bad outcome
+- set pieces: goal kicks, corners, throwins
+- set pieces: kickoffs
 
 WorldGen
 --------

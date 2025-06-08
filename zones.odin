@@ -60,11 +60,16 @@ neighbour_zone :: proc(team, dir, zone: int) -> int {
     panic("neighbour zone called for bad team")
 }
 
-neighbour_zones :: proc(team, zone: int) -> [4]int {
-    return [4]int{
-        neighbour_zone(team, FORWARD, zone),
-        neighbour_zone(team, BACKWARD, zone),
-        neighbour_zone(team, LEFT, zone),
-        neighbour_zone(team, RIGHT, zone),
+target_zone :: proc(team, zone: int, action:Action) -> int {
+    dir:int
+    switch action {
+    case .S: return 10 if team == BLUE else 0
+    case .Z: return zone
+    case .F: dir = FORWARD
+    case .D: dir = FORWARD
+    case .B: dir = BACKWARD
+    case .L: dir = LEFT
+    case .R: dir = RIGHT
     }
+    return neighbour_zone(team,dir,zone)
 }

@@ -17,23 +17,10 @@ action_names := [Action]string {
 
 passes := bit_set[Action]{.B,.L,.R,.F,.Z}
 
-target_zones :: proc(team, zone:int) -> [Action]int {
-    return {
-            .Z = zone,
-            .F = neighbour_zone(team, FORWARD, zone),
-            .D = neighbour_zone(team, FORWARD, zone),
-            .B = neighbour_zone(team, BACKWARD, zone),
-            .L = neighbour_zone(team, LEFT, zone),
-            .R = neighbour_zone(team, RIGHT, zone),
-            .S = 0 if team == RED else 10
-    }
-}
-
 shot_likelihood :: proc(ms:MatchState) -> int {
     my_team := ms.ball.team
     current_zone := ms.ball.zone
     opp_team := other_team(my_team)
-    me := ms.ball.player
     target_zone := my_team == BLUE ? 10 : 0
     distance := distance_from_goal(my_team, current_zone)
 
@@ -47,6 +34,64 @@ shot_likelihood :: proc(ms:MatchState) -> int {
     return base_chance
 }
 
+pass_likelihood :: proc(ms:MatchState, pass_type:Action) -> int {
+    assert(pass_type in passes)
+
+    my_team := ms.ball.team
+    current_zone := ms.ball.zone
+    opp_team := other_team(my_team)
+    target := target_zone(my_team, current_zone, pass_type)
+    if target == -1 do return 0
+
+    target_players := card(players_in_zone(ms, my_team, target))
+    if pass_type == .Z do target_players-=1
+
+    // don't try and pass if there's noone to pass to
+    if target_players == 0 do return 0
+
+    base_chance:int
+
+    switch pass_type {
+    case .B: base_chance=2
+    case .Z: base_chance=2
+    case .L: base_chance=3
+    case .R: base_chance=3
+    case .F: base_chance=4
+    case .D: panic("unreachable")
+    case .S: panic("unreachable")
+    }
+
+    opp_players := card(players_in_zone(ms, opp_team, target))
+    advantage := target_players - opp_players
+
+    return base_chance+advantage
+}
+
+dribble_likelihood :: proc(ms:MatchState) -> int {
+    my_team := ms.ball.team
+    current_zone := ms.ball.zone
+    opp_team := other_team(my_team)
+
+    // goalkeepers don't dribble
+    if ms.ball.player == 0 do return 0
+
+    target := target_zone(my_team, current_zone, .D)
+    if target == -1 do return 0
+
+    my_players_in_zone := card(players_in_zone(ms, my_team, current_zone))
+    opp_players_in_zone := card(players_in_zone(ms, opp_team, current_zone))
+    my_players_in_target := card(players_in_zone(ms, my_team, target))
+    opp_players_in_target := card(players_in_zone(ms, opp_team, target))
+
+    // if there are no players in this or the target zone, big chance that
+    // we choose this.
+    if opp_players_in_zone + opp_players_in_target == 0 do return 10
+
+    advantage := my_players_in_zone+my_players_in_target-opp_players_in_zone-opp_players_in_target
+
+    return 3+advantage
+}
+
 decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
     my_team := ms.ball.team
     me := ms.ball.player
@@ -54,31 +99,20 @@ decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
 
     // Given each potential action, which zone will a successful execution of that
     // action end up in?
-    target_zones := target_zones(my_team, current_zone)
 
     // for each zone, what is the relative advantage my team has in the zone?
     action_scores : [Action]int
 
     for a in Action {
-        target_zone := target_zones[a]
-        if target_zone == -1 do continue
         if me == 0 && a == .D do continue // goalkeepers don't dribble
-
-        target_players := card(players_in_zone(ms, my_team, target_zone))
-
-        if a == .Z do target_players -= 1
-
         if a == .S do action_scores[a] = shot_likelihood(ms)
-        else if a in passes && target_players == 0 {
-            action_scores[a] = 0
-        } else {
-            opp_players_in_zone := card(players_in_zone(ms, other_team(my_team), target_zone))
-            action_scores[a] = target_players - opp_players_in_zone + 5
-        }
+        else if a == .D do action_scores[a] = dribble_likelihood(ms)
+        else if a in passes do action_scores[a] = pass_likelihood(ms, a)
+        else do panic("unreachable")
     }
 
     chosen_action := action_roll(action_scores)
-    return chosen_action, target_zones[chosen_action]
+    return chosen_action, target_zone(my_team, current_zone, chosen_action)
 }
 
 ActionReport :: struct {
@@ -201,7 +235,6 @@ action_outcome_shot :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
 
     return ar
 }
-
 
 action_outcome_pass :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     ar : ActionReport
