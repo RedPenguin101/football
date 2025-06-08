@@ -86,12 +86,19 @@ Ball :: struct {
     player : int,
 }
 
+GoalRecord :: struct {
+    team:int,
+    player:int,
+    minute:f32,
+}
+
 MatchState :: struct {
     players: [2][11]Player,
     ball : Ball,
     minute : f32,
     red_goals: int,
     blue_goals: int,
+    goal_records: [dynamic]GoalRecord,
 }
 
 distance_from_goal :: proc(team, zone: int) -> int {
@@ -159,5 +166,10 @@ main :: proc() {
         tick_match_state(&ms, report)
     }
 
-    fmt.println("Match Score: ManUtd", ms.blue_goals, "Liverpool", ms.red_goals)
+    fmt.println("FULL TIME: Match Score: ManUtd", ms.blue_goals, "Liverpool", ms.red_goals)
+    for gr in ms.goal_records {
+        fmt.println(gr.minute, ":", ms.players[gr.team][gr.player].name)
+    }
+
+    delete(ms.goal_records)
 }

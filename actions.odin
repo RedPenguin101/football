@@ -317,6 +317,7 @@ tick_match_state :: proc(ms:^MatchState, ar:ActionReport) {
     if ar.action == .S && ar.success {
         if ar.start_team == BLUE do ms.blue_goals += 1
         else do ms.red_goals += 1
+        append(&ms.goal_records, GoalRecord{ar.start_team, ar.start_player, ms.minute})
     }
 
     ms.minute += 1
