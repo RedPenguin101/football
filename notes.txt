@@ -42,3 +42,12 @@ UI
 --
 
 Very CM2 inspired. Hit nostalgia hard.
+
+Story
+-----
+
+England, 1894: The National Football League is established. 100
+professional teams are incorporated and divided into 10 leagues. They
+play for 100 years, being promoted and relagated. The game never
+catches on outside the England. You come in in 1994, a manager in the
+lowest league.

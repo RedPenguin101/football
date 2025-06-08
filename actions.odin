@@ -29,6 +29,24 @@ target_zones :: proc(team, zone:int) -> [Action]int {
     }
 }
 
+shot_likelihood :: proc(ms:MatchState) -> int {
+    my_team := ms.ball.team
+    current_zone := ms.ball.zone
+    opp_team := other_team(my_team)
+    me := ms.ball.player
+    target_zone := my_team == BLUE ? 10 : 0
+    distance := distance_from_goal(my_team, current_zone)
+
+    // base chance is a function of distance. A distance of 0 means the player with the ball
+    // is in the opponents penalty area, a distance of 5 means they're in their own area.
+    base_chance := 5 - distance
+
+    // If the opposing goal keeper isn't in the goal zone it significantly increases the likelihood
+    if ms.players[opp_team][0].current_zone != target_zone do base_chance += 3
+
+    return base_chance
+}
+
 decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
     my_team := ms.ball.team
     me := ms.ball.player
@@ -44,16 +62,18 @@ decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
     for a in Action {
         target_zone := target_zones[a]
         if target_zone == -1 do continue
+        if me == 0 && a == .D do continue // goalkeepers don't dribble
+
         target_players := card(players_in_zone(ms, my_team, target_zone))
+
         if a == .Z do target_players -= 1
-        if a == .D && me == 0 {
-            // goalkeepers don't dribble
-            action_scores[a] = 0
-        } else if a in passes && target_players == 0 {
+
+        if a == .S do action_scores[a] = shot_likelihood(ms)
+        else if a in passes && target_players == 0 {
             action_scores[a] = 0
         } else {
             opp_players_in_zone := card(players_in_zone(ms, other_team(my_team), target_zone))
-            action_scores[a] = target_players - opp_players_in_zone + 4
+            action_scores[a] = target_players - opp_players_in_zone + 5
         }
     }
 
@@ -159,21 +179,7 @@ action_outcome_shot :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     ar.end_zone = zone
 
     // shot success chance is affected by distance to the goal
-    distance:int
-
-    if my_team == BLUE {
-        if ar.start_zone == 10 do distance = 0
-        else if ar.start_zone == 8 do distance = 1
-        else if ar.start_zone > 6 do distance = 2
-        else if ar.start_zone > 3 do distance = 3
-        else do distance = 4
-    } else {
-        if ar.start_zone == 0 do distance = 0
-        else if ar.start_zone == 2 do distance = 1
-        else if ar.start_zone < 4 do distance = 2
-        else if ar.start_zone < 7 do distance = 3
-        else do distance = 4
-    }
+    distance := distance_from_goal(my_team, ar.start_zone)
 
     // If the opponent has equal or more players than us in the zone we shoot
     // from, we are assumed to be under pressure and therefore at a disadvantage
