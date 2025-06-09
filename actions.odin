@@ -3,14 +3,12 @@ package football
 import "core:log"
 import "core:fmt"
 
-ActionType :: enum {B,Z,L,R,F,D,S}
+ActionType :: enum {Pass,Dribble,Shot}
 
 Action :: struct {
     type : ActionType,
     zone :int,
 }
-
-passes := bit_set[ActionType]{.B,.L,.R,.F,.Z}
 
 shot_likelihood :: proc(ms:MatchState) -> int {
     my_team := ms.ball.team
@@ -68,16 +66,15 @@ pass_likelihood :: proc(ms:MatchState, target:int) -> int {
     return base_chance+advantage
 }
 
-dribble_likelihood :: proc(ms:MatchState) -> int {
+dribble_likelihood :: proc(ms:MatchState, target:int) -> int {
+    if target == -1 do return 0
+
     my_team := ms.ball.team
     current_zone := ms.ball.zone
     opp_team := other_team(my_team)
 
     // goalkeepers don't dribble
     if ms.ball.player == 0 do return 0
-
-    target := target_zone(my_team, current_zone, .D)
-    if target == -1 do return 0
 
     my_players_in_zone := card(players_in_zone(ms, my_team, current_zone))
     opp_players_in_zone := card(players_in_zone(ms, opp_team, current_zone))
@@ -102,15 +99,17 @@ decide_action :: proc(ms:MatchState) -> Action {
     // action end up in?
     t_zone,score:int
 
-    for a in ActionType {
-        t_zone := target_zone(my_team, current_zone, a)
-        if me == 0 && a == .D do continue // goalkeepers don't dribble
-        if a == .S do score = shot_likelihood(ms)
-        else if a == .D do score = dribble_likelihood(ms)
-        else if a in passes do score = pass_likelihood(ms, t_zone)
-        else do panic("unreachable")
+    t_zone = neighbour_zone(my_team, FORWARD, current_zone)
+    score = dribble_likelihood(ms, t_zone)
+    set_action_chance(Action{.Dribble, t_zone}, score)
 
-        set_action_chance(Action{a,t_zone}, score)
+    t_zone = 10 if my_team == BLUE else 0
+    score = shot_likelihood(ms)
+    set_action_chance(Action{.Shot, t_zone}, score)
+
+    for z in 0..<ZONES {
+        score = pass_likelihood(ms, z)
+        set_action_chance(Action{.Pass, z}, score)
     }
 
     chosen_action := action_roll()
@@ -251,7 +250,7 @@ action_outcome_pass :: proc(ms:MatchState, a:Action) -> ActionReport {
     opp_in_target_zone := players_in_zone(ms, opp_team, a.zone)
 
     // remove yourself as a target if the pass is within the zone.
-    if a.type == .Z {
+    if a.zone == ar.start_zone {
         my_in_target_zone = my_in_target_zone - PlayerSet{ar.start_player}
     }
     assert(card(my_in_target_zone) > 0)
@@ -295,8 +294,8 @@ action_outcome :: proc(ms:MatchState, a:Action) -> ActionReport {
     assert(a.zone >= 0)
     assert(a.zone <= 10)
 
-    if a.type == .D do return action_outcome_dribble(ms,a)
-    if a.type == .S do return action_outcome_shot(ms,a)
+    if a.type == .Dribble do return action_outcome_dribble(ms,a)
+    if a.type == .Shot do return action_outcome_shot(ms,a)
     else do return action_outcome_pass(ms,a)
 }
 
@@ -305,14 +304,14 @@ tick_match_state :: proc(ms:^MatchState, ar:ActionReport) {
     ms.ball.player = ar.end_player
     ms.ball.zone = ar.end_zone
 
-    if ar.action.type == .D do ms.players[ar.start_team][ar.start_player].current_zone = ar.end_zone
+    if ar.action.type == .Dribble do ms.players[ar.start_team][ar.start_player].current_zone = ar.end_zone
 
-    if ar.action.type == .S {
+    if ar.action.type == .Shot {
         for &p in ms.players[BLUE] do p.current_zone = natural_zone(BLUE, p.position)
         for &p in ms.players[RED] do p.current_zone = natural_zone(RED, p.position)
     }
 
-    if ar.action.type == .S && ar.success {
+    if ar.action.type == .Shot && ar.success {
         if ar.start_team == BLUE do ms.blue_goals += 1
         else do ms.red_goals += 1
         append(&ms.goal_records, GoalRecord{ar.start_team, ar.start_player, ms.minute})
