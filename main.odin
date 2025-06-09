@@ -99,6 +99,7 @@ MatchState :: struct {
     red_goals: int,
     blue_goals: int,
     goal_records: [dynamic]GoalRecord,
+    commentary:string,
 }
 
 main :: proc() {
@@ -136,22 +137,21 @@ main :: proc() {
     reserve(&ACTION_CHANCES, len(ActionType)*ZONES)
     reset_action_chance()
 
-    for ms.minute < 90 {
-        action := decide_action(ms)
-        report := action_outcome(ms, action)
-        if PRINT_REPORTS {
-            cm := comment(ms, report)
-            fmt.println(cm)
-            delete(cm)
-        }
-        tick_match_state(&ms, report)
-    }
+    ui_init()
+    defer ui_close()
 
-    fmt.println("FULL TIME: Match Score: ManUtd", ms.blue_goals, "Liverpool", ms.red_goals)
-    for gr in ms.goal_records {
-        fmt.println(gr.minute, ":", ms.players[gr.team][gr.player].name)
+    for ui_continue() {
+        tick := ui_run(&ms)
+        if tick {
+            delete(ms.commentary)
+            action := decide_action(ms)
+            report := action_outcome(ms, action)
+            ms.commentary = comment(ms, report)
+            tick_match_state(&ms, report)
+        }
     }
 
     delete(ms.goal_records)
+    delete(ms.commentary)
     cleanup_action_chance()
 }
