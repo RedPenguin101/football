@@ -45,6 +45,10 @@ lane :: proc(zone:int) -> int {
     return (zone+2) / 3
 }
 
+central := bit_set[0..<ZONES]{0,2,5,8}
+left    := bit_set[0..<ZONES]{1,4,7}
+right   := bit_set[0..<ZONES]{3,6,9}
+
 neighbour_zone :: proc(team, dir, zone: int) -> int {
     if team == BLUE {
         switch dir {

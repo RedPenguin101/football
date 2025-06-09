@@ -15,11 +15,15 @@ shot_likelihood :: proc(ms:MatchState) -> int {
     current_zone := ms.ball.zone
     opp_team := other_team(my_team)
     target_zone := my_team == BLUE ? 10 : 0
-    distance := distance_from_goal(my_team, current_zone)
+
+    distance := lane(current_zone)
+    if my_team == BLUE do distance = 4-distance
+    if !(current_zone in central) do distance+=1
 
     // base chance is a function of distance. A distance of 0 means the player with the ball
-    // is in the opponents penalty area, a distance of 5 means they're in their own area.
+    // is in the opponents penalty area, a distance of 4 means they're in their own area.
     base_chance := 5 - distance
+    if base_chance <= 2 do base_chance = 0
 
     // If the opposing goal keeper isn't in the goal zone it significantly increases the likelihood
     if ms.players[opp_team][0].current_zone != target_zone do base_chance += 3
@@ -49,20 +53,25 @@ pass_likelihood :: proc(ms:MatchState, target:int) -> int {
 
     base_chance:int
     switch advance {
-    case -4: base_chance = 0
-    case -3: base_chance = 0
-    case -2: base_chance = 1
+    case -4: base_chance = -5
+    case -3: base_chance = -5
+    case -2: base_chance = -3
     case -1: base_chance = 2
     case 0:  base_chance = 3
     case 1:  base_chance = 4
-    case 2:  base_chance = 4
+    case 2:  base_chance = 3
     case 3:  base_chance = 2
     case 4:  base_chance = 0
     }
 
+    if current_zone in left && target in right ||
+        current_zone in right && target in left {
+            base_chance -= 1
+        }
+
     opp_players := card(players_in_zone(ms, opp_team, target))
     advantage := target_players - opp_players
-
+    base_chance = max(base_chance, 0)
     return base_chance+advantage
 }
 
@@ -211,7 +220,8 @@ action_outcome_shot :: proc(ms:MatchState, a:Action) -> ActionReport {
     ar.end_zone = a.zone
 
     // shot success chance is affected by distance to the goal
-    distance := distance_from_goal(my_team, ar.start_zone)
+    distance := lane(ar.start_team)
+    if my_team == BLUE do distance = 4-distance
 
     // If the opponent has equal or more players than us in the zone we shoot
     // from, we are assumed to be under pressure and therefore at a disadvantage
@@ -228,7 +238,7 @@ action_outcome_shot :: proc(ms:MatchState, a:Action) -> ActionReport {
     congestion := card(opp_in_current_zone) - card(my_in_current_zone)
 
     roll := d20()
-    win := 10 + distance + pressure_modifier + congestion
+    win := 13 + distance + pressure_modifier + congestion
     ar.success = roll >= win
 
     return ar

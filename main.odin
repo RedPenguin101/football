@@ -101,28 +101,6 @@ MatchState :: struct {
     goal_records: [dynamic]GoalRecord,
 }
 
-distance_from_goal :: proc(team, zone: int) -> int {
-    distance:int
-
-    if team == BLUE {
-        if zone == 10 do distance = 0
-        else if zone == 8 do distance = 1
-        else if zone > 6 do distance = 2
-        else if zone > 3 do distance = 3
-        else if zone > 0 do distance = 4
-        else do distance = 5
-    } else {
-        if zone == 0 do distance = 0
-        else if zone == 2 do distance = 1
-        else if zone < 4 do distance = 2
-        else if zone < 7 do distance = 3
-        else if zone < 10 do distance = 4
-        else do distance = 5
-    }
-
-    return distance
-}
-
 main :: proc() {
     context.logger = log.create_console_logger()
     context.logger.lowest_level = .Info
