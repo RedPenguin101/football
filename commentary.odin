@@ -5,7 +5,7 @@ import "core:strings"
 comment :: proc(ms:MatchState, ar:ActionReport) -> string {
     b := strings.builder_make()
 
-    switch ar.action {
+    switch ar.action.type {
     case .Z: {
         strings.write_string(&b, "ManUtd " if ar.start_team == BLUE else "Livpl ")
         strings.write_string(&b, "are passing it around")

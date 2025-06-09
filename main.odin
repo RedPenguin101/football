@@ -155,9 +155,11 @@ main :: proc() {
     ms.players[RED] = liverpool
     ms.ball = Ball{2, BLUE, 3}
 
+    reset_action_chance()
+
     for ms.minute < 90 {
-        a, z := decide_action(ms)
-        report := action_outcome(ms, a, z)
+        action := decide_action(ms)
+        report := action_outcome(ms, action)
         if PRINT_REPORTS {
             cm := comment(ms, report)
             fmt.println(cm)
@@ -172,4 +174,5 @@ main :: proc() {
     }
 
     delete(ms.goal_records)
+    cleanup_action_chance()
 }
