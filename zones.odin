@@ -41,6 +41,10 @@ BACKWARD :: 1
 LEFT     :: 2
 RIGHT    :: 3
 
+lane :: proc(zone:int) -> int {
+    return (zone+2) / 3
+}
+
 neighbour_zone :: proc(team, dir, zone: int) -> int {
     if team == BLUE {
         switch dir {

@@ -155,6 +155,7 @@ main :: proc() {
     ms.players[RED] = liverpool
     ms.ball = Ball{2, BLUE, 3}
 
+    reserve(&ACTION_CHANCES, len(ActionType)*ZONES)
     reset_action_chance()
 
     for ms.minute < 90 {

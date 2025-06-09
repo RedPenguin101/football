@@ -29,31 +29,37 @@ shot_likelihood :: proc(ms:MatchState) -> int {
     return base_chance
 }
 
-pass_likelihood :: proc(ms:MatchState, pass_type:ActionType) -> int {
-    assert(pass_type in passes)
-
+pass_likelihood :: proc(ms:MatchState, target:int) -> int {
     my_team := ms.ball.team
     current_zone := ms.ball.zone
     opp_team := other_team(my_team)
-    target := target_zone(my_team, current_zone, pass_type)
     if target == -1 do return 0
 
     target_players := card(players_in_zone(ms, my_team, target))
-    if pass_type == .Z do target_players-=1
+    if current_zone == target do target_players-=1
 
     // don't try and pass if there's noone to pass to
     if target_players == 0 do return 0
 
-    base_chance:int
+    current_lane := lane(current_zone)
+    target_lane := lane(target)
 
-    switch pass_type {
-    case .B: base_chance=2
-    case .Z: base_chance=2
-    case .L: base_chance=3
-    case .R: base_chance=3
-    case .F: base_chance=4
-    case .D: panic("unreachable")
-    case .S: panic("unreachable")
+    // The more a pass advances the ball, the more attractive it is. There are
+    // 4 lanes.
+    advance := target_lane-current_lane
+    if my_team == RED do advance *= -1
+
+    base_chance:int
+    switch advance {
+    case -4: base_chance = 0
+    case -3: base_chance = 0
+    case -2: base_chance = 1
+    case -1: base_chance = 2
+    case 0:  base_chance = 3
+    case 1:  base_chance = 4
+    case 2:  base_chance = 4
+    case 3:  base_chance = 2
+    case 4:  base_chance = 0
     }
 
     opp_players := card(players_in_zone(ms, opp_team, target))
@@ -101,7 +107,7 @@ decide_action :: proc(ms:MatchState) -> Action {
         if me == 0 && a == .D do continue // goalkeepers don't dribble
         if a == .S do score = shot_likelihood(ms)
         else if a == .D do score = dribble_likelihood(ms)
-        else if a in passes do score = pass_likelihood(ms, a)
+        else if a in passes do score = pass_likelihood(ms, t_zone)
         else do panic("unreachable")
 
         set_action_chance(Action{a,t_zone}, score)
