@@ -3,19 +3,9 @@ package football
 import "core:log"
 import "core:fmt"
 
-Action :: enum {B,Z,L,R,F,D,S}
+ActionType :: enum {B,Z,L,R,F,D,S}
 
-action_names := [Action]string {
-        .B = "Pass backward",
-        .Z = "Pass within Zone",
-        .L = "Pass left",
-        .R = "Pass right",
-        .F = "Pass forward",
-        .D = "Dribble forward",
-        .S = "Shoot",
-}
-
-passes := bit_set[Action]{.B,.L,.R,.F,.Z}
+passes := bit_set[ActionType]{.B,.L,.R,.F,.Z}
 
 shot_likelihood :: proc(ms:MatchState) -> int {
     my_team := ms.ball.team
@@ -34,7 +24,7 @@ shot_likelihood :: proc(ms:MatchState) -> int {
     return base_chance
 }
 
-pass_likelihood :: proc(ms:MatchState, pass_type:Action) -> int {
+pass_likelihood :: proc(ms:MatchState, pass_type:ActionType) -> int {
     assert(pass_type in passes)
 
     my_team := ms.ball.team
@@ -92,7 +82,7 @@ dribble_likelihood :: proc(ms:MatchState) -> int {
     return 3+advantage
 }
 
-decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
+decide_action :: proc(ms:MatchState) -> (action:ActionType, t_zone:int) {
     my_team := ms.ball.team
     me := ms.ball.player
     current_zone := ms.ball.zone
@@ -101,9 +91,9 @@ decide_action :: proc(ms:MatchState) -> (action:Action, t_zone:int) {
     // action end up in?
 
     // for each zone, what is the relative advantage my team has in the zone?
-    action_scores : [Action]int
+    action_scores : [ActionType]int
 
-    for a in Action {
+    for a in ActionType {
         if me == 0 && a == .D do continue // goalkeepers don't dribble
         if a == .S do action_scores[a] = shot_likelihood(ms)
         else if a == .D do action_scores[a] = dribble_likelihood(ms)
@@ -120,7 +110,7 @@ ActionReport :: struct {
     start_player : int,
     start_zone : int,
 
-    action : Action,
+    action : ActionType,
     target_zone : int,
     success : bool,
 
@@ -129,7 +119,7 @@ ActionReport :: struct {
     end_zone : int,
 }
 
-action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+action_outcome_dribble :: proc(ms:MatchState, a:ActionType, zone:int) -> ActionReport {
     ar : ActionReport
     ar.start_team = ms.ball.team
     ar.start_player = ms.ball.player
@@ -192,7 +182,7 @@ action_outcome_dribble :: proc(ms:MatchState, a:Action, zone:int) -> ActionRepor
     return ar
 }
 
-action_outcome_shot :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+action_outcome_shot :: proc(ms:MatchState, a:ActionType, zone:int) -> ActionReport {
     assert(zone == 0 || zone == 10)
 
     ar : ActionReport
@@ -236,7 +226,7 @@ action_outcome_shot :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     return ar
 }
 
-action_outcome_pass :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+action_outcome_pass :: proc(ms:MatchState, a:ActionType, zone:int) -> ActionReport {
     ar : ActionReport
     ar.start_team = ms.ball.team
     ar.start_player = ms.ball.player
@@ -293,7 +283,7 @@ action_outcome_pass :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
     return ar
 }
 
-action_outcome :: proc(ms:MatchState, a:Action, zone:int) -> ActionReport {
+action_outcome :: proc(ms:MatchState, a:ActionType, zone:int) -> ActionReport {
     assert(zone >= 0)
     assert(zone <= 10)
 

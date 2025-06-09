@@ -60,7 +60,7 @@ neighbour_zone :: proc(team, dir, zone: int) -> int {
     panic("neighbour zone called for bad team")
 }
 
-target_zone :: proc(team, zone: int, action:Action) -> int {
+target_zone :: proc(team, zone: int, action:ActionType) -> int {
     dir:int
     switch action {
     case .S: return 10 if team == BLUE else 0

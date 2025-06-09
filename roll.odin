@@ -13,7 +13,7 @@ dn :: proc(n:int) -> int {
     return rand.int_max(n)+1
 }
 
-action_roll :: proc(action_scores:[Action]int) -> Action {
+action_roll :: proc(action_scores:[ActionType]int) -> ActionType {
     die_size := 0
     for s in action_scores {
         die_size += s
