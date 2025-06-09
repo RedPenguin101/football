@@ -2,9 +2,8 @@ Match Engine
 ------------
 
 TWEAKS:
-- not dribbling enough
-- passes choice all over the place. Adjacent zones should be strongly favored.
-- in the box, should nearly always shoot
+- too much interception
+- different weights when having just intercepted (i.e. counters, press-wins)
 
 ACTIONS
 - action: hold up the ball, allowing team mates to make advanced runs
@@ -35,6 +34,8 @@ ACTIONS
 
 - start collecting match stats so as to start refining outcome likelihoods
 
+- offside
+
 WorldGen
 --------
 
@@ -53,3 +54,7 @@ UI
 
 - Match engine UI with teams, scores,
 - debug match engine so you can see the zones, action choices, outcomes
+
+Commentary
+----------
+

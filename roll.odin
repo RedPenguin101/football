@@ -40,6 +40,11 @@ action_roll :: proc() -> Action {
     if die_size <= 0 {
         log.panic("no suitable action", ACTION_CHANCES)
     }
+    if ODIN_DEBUG {
+        for a,v in ACTION_CHANCES {
+            if v > 0 do log.debug("  ", a, (100*v)/die_size, "%")
+        }
+    }
     roll := dn(die_size)
     acc := 0
     for action, score in ACTION_CHANCES {

@@ -24,6 +24,7 @@ shot_likelihood :: proc(ms:MatchState) -> int {
     // is in the opponents penalty area, a distance of 4 means they're in their own area.
     base_chance := 5 - distance
     if base_chance <= 2 do base_chance = 0
+    else do base_chance *= 2
 
     // If the opposing goal keeper isn't in the goal zone it significantly increases the likelihood
     if ms.players[opp_team][0].current_zone != target_zone do base_chance += 3
@@ -56,23 +57,23 @@ pass_likelihood :: proc(ms:MatchState, target:int) -> int {
     case -4: base_chance = -5
     case -3: base_chance = -5
     case -2: base_chance = -3
-    case -1: base_chance = 2
-    case 0:  base_chance = 3
-    case 1:  base_chance = 4
-    case 2:  base_chance = 3
-    case 3:  base_chance = 2
+    case -1: base_chance = 4
+    case 0:  base_chance = 7
+    case 1:  base_chance = 6
+    case 2:  base_chance = 2
+    case 3:  base_chance = 1
     case 4:  base_chance = 0
     }
 
     if current_zone in left && target in right ||
         current_zone in right && target in left {
-            base_chance -= 1
+            base_chance -= 5
         }
 
     opp_players := card(players_in_zone(ms, opp_team, target))
     advantage := target_players - opp_players
-    base_chance = max(base_chance, 0)
-    return base_chance+advantage
+    log.debug("to zone", target, "advance", advance, "base", base_chance, "advantage", advantage)
+    return max(0, base_chance+advantage)
 }
 
 dribble_likelihood :: proc(ms:MatchState, target:int) -> int {
@@ -96,13 +97,15 @@ dribble_likelihood :: proc(ms:MatchState, target:int) -> int {
 
     advantage := my_players_in_zone+my_players_in_target-opp_players_in_zone-opp_players_in_target
 
-    return 3+advantage
+    return 8+advantage
 }
 
 decide_action :: proc(ms:MatchState) -> Action {
     my_team := ms.ball.team
     me := ms.ball.player
     current_zone := ms.ball.zone
+
+    log.debug("Deciding action, zone", ms.ball.zone)
 
     // Given each potential action, which zone will a successful execution of that
     // action end up in?

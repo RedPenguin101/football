@@ -147,6 +147,7 @@ main :: proc() {
             action := decide_action(ms)
             report := action_outcome(ms, action)
             ms.commentary = comment(ms, report)
+            log.debug(ms.commentary)
             tick_match_state(&ms, report)
         }
     }
