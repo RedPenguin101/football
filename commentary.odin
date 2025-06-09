@@ -17,10 +17,7 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
             }
         } else {
             strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
-            strings.write_string(&b, " passes the ball from zone ")
-            strings.write_int(&b, ar.start_zone)
-            strings.write_string(&b, " to zone ")
-            strings.write_int(&b, ar.action.zone)
+            strings.write_string(&b, " passes the ball")
             if ar.success {
                 strings.write_string(&b, " to ")
             }
@@ -28,29 +25,47 @@ comment :: proc(ms:MatchState, ar:ActionReport) -> string {
                 strings.write_string(&b, " but it's intercepted by ")
             }
             strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
-
+            if ODIN_DEBUG {
+                strings.write_string(&b, " (")
+                strings.write_int(&b, ar.start_zone)
+                strings.write_string(&b, "->")
+                strings.write_int(&b, ar.action.zone)
+                strings.write_string(&b, ")")
+            }
         }
     }
     case .Dribble: {
         strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
-        strings.write_string(&b, " carries the ball forward from zone ")
-        strings.write_int(&b, ar.start_zone)
-        strings.write_string(&b, " to zone ")
-        strings.write_int(&b, ar.action.zone)
+        strings.write_string(&b, " carries the ball forward")
         if !ar.success {
             strings.write_string(&b, " but is tackled by ")
             strings.write_string(&b, ms.players[ar.end_team][ar.end_player].name)
         }
+        if ODIN_DEBUG {
+            strings.write_string(&b, " (")
+            strings.write_int(&b, ar.start_zone)
+            strings.write_string(&b, "->")
+            strings.write_int(&b, ar.action.zone)
+            strings.write_string(&b, ")")
+        }
     }
     case .Shot: {
         strings.write_string(&b, ms.players[ar.start_team][ar.start_player].name)
-        strings.write_string(&b, " shoots from zone ")
+        strings.write_string(&b, " shoots...")
         strings.write_int(&b, ar.start_zone)
         if ar.success {
             strings.write_string(&b, " GOOOOOAL!!!")
         } else {
             strings.write_string(&b, " But the keeper collects it")
         }
+        if ODIN_DEBUG {
+            strings.write_string(&b, " (")
+            strings.write_int(&b, ar.start_zone)
+            strings.write_string(&b, "->")
+            strings.write_int(&b, ar.action.zone)
+            strings.write_string(&b, ")")
+        }
+
     }
     }
 
