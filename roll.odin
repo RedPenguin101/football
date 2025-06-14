@@ -1,6 +1,7 @@
 package football
 import "core:math/rand"
 import "core:log"
+import "core:fmt"
 
 d20 :: proc() -> int {
     return rand.int_max(20)+1
@@ -14,6 +15,16 @@ dn :: proc(n:int) -> int {
 }
 
 ACTION_CHANCES : map[Action]int
+
+print_action_change :: proc() {
+    total := 0
+    for a, s in ACTION_CHANCES {
+        total += s
+    }
+    for a, s in ACTION_CHANCES {
+        if (s > 0) do fmt.println(a.type, a.zone, ": ", s*100/total)
+    }
+}
 
 set_action_chance :: proc(a:Action, score:int) {
     ACTION_CHANCES[a] = score

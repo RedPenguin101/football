@@ -105,6 +105,12 @@ decide_action :: proc(ms:MatchState) -> Action {
     me := ms.ball.player
     current_zone := ms.ball.zone
 
+    l := lane(current_zone) if my_team == BLUE else 4-lane(current_zone)
+
+    if l == 0 || l == 4 {
+        return ball_player_action(ms)
+    }
+
     log.debug("Deciding action, zone", ms.ball.zone)
 
     // Given each potential action, which zone will a successful execution of that

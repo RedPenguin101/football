@@ -2,15 +2,16 @@ Match Engine
 ------------
 
 TWEAKS:
+- way too much passing, passing decisions are bad
 - too much interception
 - different weights when having just intercepted (i.e. counters, press-wins)
 
 ACTIONS
-- action: hold up the ball, allowing team mates to make advanced runs
-- dribble action should allow for dribble inside when on the advanced flanks
 - game tick iterates through non-ball holding players and makes action.
   - defenders move up the pitch
   - all players, when out of position, will track backwards as appropriate
+- action: hold up the ball, allowing team mates to make advanced runs
+- dribble action should allow for dribble inside when on the advanced flanks
 
 - refine success so multiple outcomes are possible
   - shots can be saved if on target, but can also hit the goal frame or go wide, depending on execution score

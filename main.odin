@@ -38,6 +38,10 @@ players_in_zone :: proc(ms:MatchState, team, zone:int) -> PlayerSet {
     return ps
 }
 
+advantage_in_zone :: proc(ms:MatchState, team,zone:int) -> int {
+    return card(players_in_zone(ms,team,zone))-card(players_in_zone(ms,other_team(team),zone))
+}
+
 random_player_from_set :: proc(ps:PlayerSet) -> int {
     count := card(ps)
     if count == 0 {

@@ -151,3 +151,45 @@ Things that aren't going to be included in the first version
 - Substitutions
 - The global modifiers
 - The game master
+
+Phases of play
+--------------
+
+https://www.phaseofplay.com/post/phases-of-play-in-football
+
+I want to start structuring things around phases of play
+
+Phases of play are driven by a) whether you are in possession and
+b) which lane the ball is in.
+
+In possession:
+
+first 3rd: build up from the back. Passing it around in the back zone,
+while more advanced players try to create local advantages by moving
+around. When the player with the ball sees an advantage they try to
+play those players in.
+
+middle 3rd: look for runs from attackers, play around in the middle,
+using width, play back if lacking advantage.
+
+off the ball phases:
+
+first 3rd: track back. try to win the ball through tackles
+
+middle 3rd: some attackers drop back, some wait for turnover.
+midfielders try to win the ball or mark. defenders prevent through
+balls to final 3rd.
+
+final 3rd: press the defenders, mark the midfielders and attackers to
+try to prevent ball progression
+
+Goalkeeper positioning
+----------------------
+
+The goalkeeper should have a special attr 'positioning' (0-1) which is
+rerolled randomly on every turn. The attr affects how likely they are
+to make a save. An outfield player with an appropriate skill can judge
+how well (or poorly) positioned a keeper is and will increase the
+chance that they will take a shot if the keeper is poorly positioned.
+A player with a good eye can notice from midfield when a keeper is way
+off their line and try shots from the halfway line.
